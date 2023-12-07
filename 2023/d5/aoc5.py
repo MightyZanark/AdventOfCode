@@ -1,15 +1,35 @@
-from math import ceil
-from sys import argv
+def calc(mapping: dict[tuple[int,int], int], key: int, left: int, right: int, limit: int) -> int:
+    res = key
+    nearest_lower = (float('inf'), 0)
+    nearest_upper = (float('inf'), 0)
+    for lower, upper in mapping:
+        if lower <= key <= upper:
+            res = (key-lower) + mapping[(lower, upper)]
+            left = min(upper-key+1, right, limit)
+            return res, left
+        
+        elif lower > key:
+            if lower-key < nearest_lower[0]:
+                nearest_lower = (lower-key, lower)
+        
+        elif upper < key:
+            if key-upper < nearest_upper[0]:
+                nearest_upper = (key-upper, upper)
 
-if len(argv) != 2:
-    print(f"Usage: python {argv[0]} <filename>")
-    exit(1)
+    if nearest_upper[1] < nearest_lower[1] and nearest_lower[0] != float('inf'):
+        left = nearest_lower[0]
+    
+    elif nearest_upper[1] > nearest_lower[1] and nearest_lower[0] != float('inf'):
+        left = nearest_lower[0]
 
-with open(f"{argv[1]}.txt") as f:
+    return res, left
+
+
+with open("aoc5.txt") as f:
     data = f.read().split("\n\n")
 
 seeds = [int(s) for s in data[0].split(" ")[1:]]
-seeds = [(seeds[i], seeds[i+1]) for i in range(0, len(seeds), 2)]
+seeds = [(seeds[i], seeds[i+1]) for i in range(0, len(seeds), 2)] # remove for part 1
 seed_soil = {}
 soil_fert = {}
 fert_water = {}
@@ -39,148 +59,29 @@ for item in data[1:]:
         elif header.startswith("humidity"):
             humid_loc[(src, src+length-1)] = dest
 
-def calc(mapping: dict[tuple[int,int], int], key: int, left: int, right: int, limit: int) -> int:
-    res = key
-    for lower, upper in mapping:
-        if lower <= key <= upper:
-            res = (key-lower) + mapping[(lower, upper)]
-            left = upper-key
-            break
-
-    return res, left
-
 smallest = float("inf")
-it = 0
 for seed, length in seeds:
     limit = seed + length
     while seed < limit:
-        amt = 0
+        amt = 1
         independent = False
         
-        soil, amt = calc(seed_soil, seed, amt, length, limit)
-        # for lower, upper in seed_soil:
-        #     if lower <= seed <= upper:
-        #         soil = (seed-lower) + seed_soil[(lower, upper)]
-        #         amt = min(upper-seed, length-1, limit-seed)
-        #         print(seed, lower, amt)
-        #         print(upper-seed, length-1, limit-seed)
-        #         seed += amt
-        #         length -= amt
-        #         break
-        # if soil == seed:
-        #     amt -= 1
-        #     length += amt
-        #     seed -= length
-        #     independent = True
+        soil, amt = calc(seed_soil, seed, amt, length, limit-seed)
+        fert, amt2 = calc(soil_fert, soil, amt, length, limit-seed)
+        water, amt3 = calc(fert_water, fert, amt, length, limit-seed)
+        light, amt4 = calc(water_light, water, amt, length, limit-seed)
+        temp, amt5 = calc(light_temp, light, amt, length, limit-seed)
+        humid, amt6 = calc(temp_humid, temp, amt, length, limit-seed)
+        loc, amt7 = calc(humid_loc, humid, amt, length, limit-seed)
 
-        fert = soil
-        for lower, upper in soil_fert:
-            if lower <= soil <= upper:
-                fert = (soil-lower) + soil_fert[(lower, upper)]
-                if soil+amt-upper > 0 and not independent:
-                    amt -= upper-soil
-                    amt = min(upper-soil, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if fert == soil and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-
-        water = fert
-        for lower, upper in fert_water:
-            if lower <= fert <= upper:
-                water = (fert-lower) + fert_water[(lower, upper)]
-                if water+amt-upper > 0 and not independent:
-                    amt -= upper-fert
-                    amt = min(upper-fert, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if water == fert and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-        
-        light = water
-        for lower, upper in water_light:
-            if lower <= water <= upper:
-                light = (water-lower) + water_light[(lower, upper)]
-                if light+amt-upper > 0 and not independent:
-                    amt -= upper-water
-                    amt = min(upper-water, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if light == water and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-        
-        temp = light
-        for lower, upper in light_temp:
-            if lower <= light <= upper:
-                temp = (light-lower) + light_temp[(lower, upper)]
-                if temp+amt-upper > 0 and not independent:
-                    amt -= upper-light
-                    amt = min(upper-light, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if temp == light and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-
-        humid = temp
-        for lower, upper in temp_humid:
-            if lower <= temp <= upper:
-                humid = (temp-lower) + temp_humid[(lower, upper)]
-                if humid+amt-upper > 0 and not independent:
-                    amt -= upper-temp
-                    amt = min(upper-temp, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if humid == temp and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-        
-        loc = humid
-        for lower, upper in humid_loc:
-            if lower <= humid <= upper:
-                loc = (humid-lower) + humid_loc[(lower, upper)]
-                if loc+amt-upper > 0 and not independent:
-                    amt -= upper-humid
-                    amt = min(upper-humid, length-1, limit-seed)
-                    length += amt
-                    seed -= amt
-                break
-        if loc == humid and not independent:
-            amt -= 1
-            length += amt
-            seed -= amt
-            independent = True
-        
-        print(f"Iteration {it}: {seed = } {seed/limit * 100:.2f}%", end="\r")
-        # print(f"{soil = }, {fert = }, {water = }, {light = }, {temp = }, {humid = }, {loc = }")
-        # print(f"{seed = }, {length = }, {amt = }")
+        offset = min(amt, amt2, amt3, amt4, amt5, amt6, amt7)
         if loc < smallest:
             smallest = loc
         
         if smallest == 0:
             break
         
-        # seed += 1
-    
-    print()
-    it += 1
+        seed += offset
+        length -= offset
 
 print(smallest)
