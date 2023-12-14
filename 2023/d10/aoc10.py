@@ -86,11 +86,71 @@ def flood_fill(data, maze, row, col):
     
     return max_dist
 
-print(flood_fill(data, maze, row, col))
+print(f'Part 1: {flood_fill(data, maze, row, col)}')
 
-with open('res.txt', 'w') as f:
-    for line in maze:
-        f.write('[')
-        for d in line:
-            f.write(f'{d:5d}')
-        f.write(']\n')
+# Replace the 'S' tile with the correct pipe
+if start_row-1 >= 0 and maze[start_row-1][start_col] == 1:
+    if start_col-1 >= 0 and maze[start_row][start_col-1] == 1:
+        data[start_row][start_col] = 'J'
+    elif start_col+1 < len(maze[0]) and maze[start_row][start_col+1] == 1:
+        data[start_row][start_col] = 'L'
+    elif start_row+1 < len(maze) and maze[start_row+1][start_col] == 1:
+        data[start_row][start_col] = '|'
+
+elif start_row+1 < len(maze) and maze[start_row+1][start_col] == 1:
+    if start_col-1 >= 0 and maze[start_row][start_col-1] == 1:
+        data[start_row][start_col] = '7'
+    elif start_col+1 < len(maze[0]) and maze[start_row][start_col+1] == 1:
+        data[start_row][start_col] = 'F'
+
+else:
+    data[start_row][start_col] = '-'
+
+# Replace all tiles that are not part of the loop
+# with '.'
+for i, row in enumerate(data):
+    j = 0
+    while j < len(row):
+        while j < len(row) and maze[i][j] == -1:
+            row[j] = '.'
+            j += 1
+        
+        if j == len(row):
+            break
+        
+        while j < len(row) and maze[i][j] != -1:
+            j += 1
+            k += 1
+
+enclosed = 0
+for row in data:
+    inside = False
+    count = 0
+    last_corner = ''
+    for col in row:
+        # Credit to subreddit for the hint of counting 'bars'
+        # to determine whether the '.' is outside or inside
+        # the loop
+        if col == '|':
+            inside = 1 - inside
+        
+        elif col == 'L' or col == 'F':
+            last_corner = col
+        
+        elif col == 'J':
+            if last_corner == 'F':
+                inside = 1 - inside
+            last_corner = ''
+        
+        elif col == '7':
+            if last_corner == 'L':
+                inside = 1 - inside
+            last_corner = ''
+        
+        elif col == '.':
+            if inside:
+                count += 1
+    
+    enclosed += count
+
+print(f'Part 2: {enclosed}')

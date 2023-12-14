@@ -4,4 +4,4 @@ My (not so pretty) solutions for [Advent of Code](https://adventofcode.com/)
 
 |Year|Language|Stars|
 |---|---|---|
-|2023|Python|27 ⭐|
+|2023|Python|28 ⭐|
